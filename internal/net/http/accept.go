@@ -8,7 +8,7 @@ import (
 	"net/http"
 
 	"github.com/golang/gddo/httputil"
-	"go.adoublef/up/internal/runtime/debug"
+	"go.adoublef/eyeoh/internal/runtime/debug"
 )
 
 const (

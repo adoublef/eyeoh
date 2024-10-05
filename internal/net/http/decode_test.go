@@ -8,9 +8,9 @@ import (
 	"testing"
 	"time"
 
-	. "go.adoublef/up/internal/net/http"
-	"go.adoublef/up/internal/net/nettest"
-	"go.adoublef/up/internal/testing/is"
+	. "go.adoublef/eyeoh/internal/net/http"
+	"go.adoublef/eyeoh/internal/net/nettest"
+	"go.adoublef/eyeoh/internal/testing/is"
 )
 
 var ctJSON = func(r *http.Request) { r.Header.Set("Content-Type", "application/json") }

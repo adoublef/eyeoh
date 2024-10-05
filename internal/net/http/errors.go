@@ -4,13 +4,14 @@ import (
 	"errors"
 	"net/http"
 
-	dberrors "go.adoublef/up/internal/database/errors"
-	"go.adoublef/up/internal/runtime/debug"
+	dberrors "go.adoublef/eyeoh/internal/database/errors"
+	"go.adoublef/eyeoh/internal/runtime/debug"
 )
 
 // Error replies to the request with the specified error.
 // If err implements [statusHandler] we use it's [statusHandler.ServeHTTP] method instead.
 func Error(w http.ResponseWriter, r *http.Request, err error) {
+	debug.Printf("net/http: %T, %v = err", err, err)
 	if sh, ok := err.(statusHandler); ok {
 		sh.ServeHTTP(w, r)
 		return
@@ -20,7 +21,8 @@ func Error(w http.ResponseWriter, r *http.Request, err error) {
 	case errors.Is(err, dberrors.ErrNotExist):
 		// append path? or this will be handled by tempo anyway
 		sh.code = http.StatusNotFound
+	case errors.Is(err, dberrors.ErrExist):
+		sh.code = http.StatusConflict
 	}
 	sh.ServeHTTP(w, r)
-	debug.Printf("net/http: %T, %v = err", err, err)
 }

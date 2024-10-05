@@ -9,8 +9,8 @@ import (
 	"net/http"
 	"testing"
 
-	. "go.adoublef/up/internal/net/http"
-	"go.adoublef/up/internal/testing/is"
+	. "go.adoublef/eyeoh/internal/net/http"
+	"go.adoublef/eyeoh/internal/testing/is"
 )
 
 func Test_AcceptHandler(t *testing.T) {

@@ -4,7 +4,7 @@ import "context"
 
 type contextKey struct{ s string }
 
-func (k contextKey) String() string { return "go.adoublef/up/internal/net/http: " + k.s }
+func (k contextKey) String() string { return "go.adoublef/eyeoh/internal/net/http: " + k.s }
 
 var (
 	ContentTypOfferKey = &contextKey{"accept-offer"}

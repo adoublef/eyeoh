@@ -5,7 +5,7 @@ import (
 	"strconv"
 	"time"
 
-	"go.adoublef/up/internal/runtime/debug"
+	"go.adoublef/eyeoh/internal/runtime/debug"
 	"golang.org/x/time/rate"
 )
 

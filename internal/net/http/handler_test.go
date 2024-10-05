@@ -6,14 +6,50 @@ import (
 	"io"
 	"net/http"
 	"strings"
+	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
 	"github.com/Shopify/toxiproxy/v2/toxics"
 	"github.com/google/uuid"
-	. "go.adoublef/up/internal/net/http"
-	"go.adoublef/up/internal/testing/is"
+	. "go.adoublef/eyeoh/internal/net/http"
+	"go.adoublef/eyeoh/internal/testing/is"
 )
+
+func Test_handleFileInfo(t *testing.T) {
+	t.Run("OK", func(t *testing.T) {
+		// create the file
+		c, ctx := newClient(t), context.Background()
+
+		// make two request, one for a new file another for a new directory
+		// then using both the results to get the file info
+		// should get one file and folder
+
+		res, err := c.PostFormFile(ctx, "POST /touch/files", "testdata/hello.txt")
+		is.OK(t, err) // return file upload response
+		is.Equal(t, res.StatusCode, http.StatusOK)
+
+		var file struct {
+			ID string `json:"fileId"`
+		}
+		err = json.NewDecoder(res.Body).Decode(&file)
+		is.OK(t, err) // decode json payload
+		is.OK(t, res.Body.Close())
+
+		// todo: make two requests to monitor singleflight/groupcache?
+		res, err = c.Do(ctx, "GET /info/files/"+file.ID, nil, ctJSON, acceptAll)
+		is.OK(t, err) // return download response
+		is.Equal(t, res.StatusCode, http.StatusOK)
+
+		var info struct {
+			IsDir string `json:"isDir"`
+		}
+		err = json.NewDecoder(res.Body).Decode(&info)
+		is.OK(t, err) // decode json payload
+		is.OK(t, res.Body.Close())
+	})
+}
 
 func Test_handleCreateFolder(t *testing.T) {
 	t.Run("OK", func(t *testing.T) {
@@ -25,6 +61,16 @@ func Test_handleCreateFolder(t *testing.T) {
 		is.OK(t, err) // return file upload response
 		is.Equal(t, res.StatusCode, http.StatusOK)
 	})
+
+	t.Run("ErrBadName", func(t *testing.T) {
+		c, ctx := newClient(t), context.Background()
+
+		body := `{"name":""}`
+
+		res, err := c.Do(ctx, "POST /mkdir/files", strings.NewReader(body), ctJSON, acceptAll)
+		is.OK(t, err) // return file upload response
+		is.Equal(t, res.StatusCode, http.StatusBadRequest)
+	})
 }
 
 func Test_handleFileUpload(t *testing.T) {
@@ -34,6 +80,35 @@ func Test_handleFileUpload(t *testing.T) {
 		res, err := c.PostFormFile(ctx, "POST /touch/files", "testdata/hello.txt")
 		is.OK(t, err) // return file upload response
 		is.Equal(t, res.StatusCode, http.StatusOK)
+	})
+
+	t.Run("ErrExist", func(t *testing.T) {
+		c, ctx := newClient(t), context.Background()
+
+		// only one request should pass
+		var ok, conflict atomic.Int64
+		var wg sync.WaitGroup
+		wg.Add(2)
+		for range 2 {
+			go func() {
+				defer wg.Done()
+				res, err := c.PostFormFile(ctx, "POST /touch/files", "testdata/hello.txt")
+				is.OK(t, err) // return file upload response
+				switch res.StatusCode {
+				case http.StatusOK:
+					ok.Add(1)
+				// error status code should be conflict
+				case http.StatusConflict:
+					conflict.Add(1)
+				default:
+					t.Logf("%d = res.StatusCode", res.StatusCode)
+				}
+			}()
+		}
+		wg.Wait()
+
+		is.Equal(t, ok.Load(), 1)
+		is.Equal(t, conflict.Load(), 1)
 	})
 }
 
@@ -45,13 +120,13 @@ func Test_handleFileDownload(t *testing.T) {
 		is.OK(t, err) // return upload response
 		is.Equal(t, res.StatusCode, http.StatusOK)
 
-		var completed struct {
+		var file struct {
 			ID string `json:"fileId"`
 		}
-		err = json.NewDecoder(res.Body).Decode(&completed)
+		err = json.NewDecoder(res.Body).Decode(&file)
 		is.OK(t, err) // decode json payload
 
-		res, err = c.Do(ctx, "GET /files/"+completed.ID, nil, acceptAll)
+		res, err = c.Do(ctx, "GET /files/"+file.ID, nil, acceptAll)
 		is.OK(t, err) // return download response
 		is.Equal(t, res.StatusCode, http.StatusOK)
 

@@ -22,14 +22,14 @@ import (
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/cockroachdb"
 	"github.com/testcontainers/testcontainers-go/modules/minio"
-	"go.adoublef/up/internal/blob"
-	"go.adoublef/up/internal/database/crdb"
-	"go.adoublef/up/internal/fs"
-	. "go.adoublef/up/internal/net/http"
-	"go.adoublef/up/internal/net/http/httputil"
-	"go.adoublef/up/internal/net/nettest"
-	"go.adoublef/up/internal/testing/is"
-	"go.adoublef/up/internal/testing/texttest"
+	"go.adoublef/eyeoh/internal/blob"
+	"go.adoublef/eyeoh/internal/database/crdb"
+	"go.adoublef/eyeoh/internal/fs"
+	. "go.adoublef/eyeoh/internal/net/http"
+	"go.adoublef/eyeoh/internal/net/http/httputil"
+	"go.adoublef/eyeoh/internal/net/nettest"
+	"go.adoublef/eyeoh/internal/testing/is"
+	"go.adoublef/eyeoh/internal/testing/texttest"
 )
 
 //go:embed all:testdata/*

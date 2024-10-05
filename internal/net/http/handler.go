@@ -4,13 +4,13 @@ import (
 	"net/http"
 	"time"
 
-	"go.adoublef/up/internal/fs"
+	"go.adoublef/eyeoh/internal/fs"
 	olog "go.opentelemetry.io/contrib/bridges/otelslog"
 	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 	"go.opentelemetry.io/otel"
 )
 
-const scopeName = "go.adoublef/up/internal/net/http"
+const scopeName = "go.adoublef/eyeoh/internal/net/http"
 
 var (
 	tracer = otel.Tracer(scopeName)
@@ -55,7 +55,7 @@ func Handler(burst int, ttl time.Duration, fsys *fs.FS) http.Handler {
 
 	handleFunc("POST /touch/files", handleFileUpload(fsys))
 	handleFunc("POST /mkdir/files", JSON(handleCreateFolder(fsys)))
-	// GET /info/files/{files}
+	handleFunc("GET /info/files/{file}", handleFileInfo(fsys))
 	handleFunc("GET /files/{file}", handleDownloadFile(fsys))
 	// todo: MOVE
 	// todo: COPY

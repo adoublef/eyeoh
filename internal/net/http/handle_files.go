@@ -2,14 +2,13 @@ package http
 
 import (
 	"cmp"
-	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
 
 	"github.com/google/uuid"
-	"go.adoublef/up/internal/fs"
-	"go.adoublef/up/internal/runtime/debug"
+	"go.adoublef/eyeoh/internal/fs"
+	"go.adoublef/eyeoh/internal/runtime/debug"
 )
 
 func handleFileUpload(fsys *fs.FS) http.HandlerFunc {
@@ -80,15 +79,14 @@ func handleFileUpload(fsys *fs.FS) http.HandlerFunc {
 		c := upload{
 			ID: file.String(),
 		}
-		err = json.NewEncoder(w).Encode(c)
-		debug.Printf(`%v = json.NewEncoder(w).Encode(%#v)`, err, c)
+		respond(w, r, c)
 	}
 }
 
 func handleDownloadFile(fsys *fs.FS) http.HandlerFunc {
 	var badPathValue = statusHandler{
 		code: http.StatusBadRequest,
-		s:    `path parameter has invalid format`,
+		s:    `file id in path has invalid format`,
 	}
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx, span := tracer.Start(r.Context(), "handleDownloadFile")
@@ -170,7 +168,39 @@ func handleCreateFolder(fsys *fs.FS) http.HandlerFunc {
 		f := folder{
 			ID: file.String(),
 		}
-		err = json.NewEncoder(w).Encode(f)
-		debug.Printf(`%v = json.NewEncoder(w).Encode(%#v)`, err, f)
+		respond(w, r, f)
+	}
+}
+
+func handleFileInfo(fsys *fs.FS) http.HandlerFunc {
+	var badPathValue = statusHandler{
+		code: http.StatusBadRequest,
+		s:    `file id in path has invalid format`,
+	}
+
+	type stat struct {
+		fs.FileInfo        // inline
+		Version     uint64 `json:"version"`
+	}
+	return func(w http.ResponseWriter, r *http.Request) {
+		ctx, span := tracer.Start(r.Context(), "handleFileInfo")
+		defer span.End()
+
+		file, err := uuid.Parse(r.PathValue("file"))
+		if err != nil {
+			badPathValue.ServeHTTP(w, r)
+			return
+		}
+		info, v, err := fsys.Stat(ctx, file)
+		if err != nil {
+			Error(w, r, err)
+			return
+		}
+
+		st := stat{
+			FileInfo: info,
+			Version:  v,
+		}
+		respond(w, r, st)
 	}
 }

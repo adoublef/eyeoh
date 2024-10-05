@@ -13,7 +13,7 @@ import (
 	"time"
 	"unicode/utf8"
 
-	"go.adoublef/up/internal/runtime/debug"
+	"go.adoublef/eyeoh/internal/runtime/debug"
 )
 
 var errRequestBodyEOF = statusHandler{
@@ -102,7 +102,7 @@ func Decode[V any](w http.ResponseWriter, r *http.Request, sz int, d time.Durati
 		// Otherwise default to logging the error and sending a 500 Internal
 		// Server Error response. May want to wrap this error.
 		default:
-			return zero, err
+			return zero, errRequestJSONSyntax("encoding error: %v", err)
 		}
 	}
 	// note: log error as this will not be returned to the client
