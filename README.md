@@ -14,3 +14,4 @@
 - [golangci-lint](https://golangci-lint.run/)
 - [running testcontainers using github actions](https://www.docker.com/blog/running-testcontainers-tests-using-github-actions/)
 - [docs for testcontainers cloud](https://testcontainers.com/cloud/docs/)
+- [control the concurrency of workflows and jobs](https://docs.github.com/en/enterprise-cloud@latest/actions/writing-workflows/choosing-what-your-workflow-does/control-the-concurrency-of-workflows-and-jobs)
