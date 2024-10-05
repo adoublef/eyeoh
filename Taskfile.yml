@@ -48,3 +48,8 @@ tasks:
     desc: run logs
     cmd: |
       docker compose logs -f {{.CLI_ARGS}}
+
+  act:
+    desc: github actions tests
+    cmd: |
+      gh act --container-architecture=linux/arm64 {{.CLI_ARGS}}
