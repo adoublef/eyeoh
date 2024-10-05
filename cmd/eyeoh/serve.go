@@ -10,9 +10,9 @@ import (
 	"os/signal"
 	"time"
 
-	"go.adoublef/up/internal/fs"
-	"go.adoublef/up/internal/net/http"
-	"go.adoublef/up/internal/time/rate"
+	"go.adoublef/eyeoh/internal/fs"
+	"go.adoublef/eyeoh/internal/net/http"
+	"go.adoublef/eyeoh/internal/time/rate"
 	"golang.org/x/sync/errgroup"
 )
 

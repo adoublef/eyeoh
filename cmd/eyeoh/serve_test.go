@@ -6,8 +6,8 @@ import (
 	"testing"
 	"time"
 
-	"go.adoublef/up/internal/testing/is"
-	"go.adoublef/up/internal/testing/wait"
+	"go.adoublef/eyeoh/internal/testing/is"
+	"go.adoublef/eyeoh/internal/testing/wait"
 	"golang.org/x/sync/errgroup"
 )
 

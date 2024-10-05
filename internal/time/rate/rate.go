@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	"go.adoublef/up/internal/runtime/debug"
+	"go.adoublef/eyeoh/internal/runtime/debug"
 )
 
 var (

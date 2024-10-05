@@ -3,8 +3,8 @@ package rate_test
 import (
 	"testing"
 
-	"go.adoublef/up/internal/testing/is"
-	. "go.adoublef/up/internal/time/rate"
+	"go.adoublef/eyeoh/internal/testing/is"
+	. "go.adoublef/eyeoh/internal/time/rate"
 )
 
 func Test_ParseFraction(t *testing.T) {

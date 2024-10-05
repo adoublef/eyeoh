@@ -8,7 +8,7 @@ import (
 	"go.opentelemetry.io/otel"
 )
 
-const scopeName = "go.adoublef/up/internal/fs"
+const scopeName = "go.adoublef/eyeoh/internal/fs"
 
 var (
 	tracer = otel.Tracer(scopeName)
@@ -17,12 +17,12 @@ var (
 )
 
 type FileInfo struct {
-	ID      uuid.UUID
-	Ref     uuid.UUID
-	Name    Name
-	Size    int64
-	ModTime time.Time
-	IsDir   bool
+	ID      uuid.UUID `json:"fileId"`
+	Ref     uuid.UUID `json:"-"`
+	Name    Name      `json:"filename"`
+	Size    int64     `json:"size"`
+	ModTime time.Time `json:"modifiedAt"`
+	IsDir   bool      `json:"isDir"`
 }
 
 type DirEntry struct {

@@ -16,7 +16,7 @@ func (n Name) MarshalText() ([]byte, error) {
 func (n *Name) UnmarshalText(text []byte) (err error) {
 	*n, err = ParseName(string(text))
 	if err != nil {
-		return err
+		return err // wrap with json error?
 	}
 	return nil
 }
