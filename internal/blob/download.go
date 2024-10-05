@@ -3,7 +3,9 @@ package blob
 import (
 	"bufio"
 	"context"
+	"errors"
 	"io"
+	"net/http"
 	"path"
 	"strings"
 
@@ -18,7 +20,7 @@ type Downloader struct {
 	m      *manager.Downloader // just have this as a global atomic?
 }
 
-func (d *Downloader) Download(ctx context.Context, id uuid.UUID) (io.ReadCloser, error) {
+func (d *Downloader) Download(ctx context.Context, id uuid.UUID) (rc io.ReadCloser, mime string, err error) {
 	s := strings.Replace(id.String(), "-", "", 4)
 	uri := path.Join("_blob", s[:2], s[2:4], s[4:])
 	// if the body is not used then this seems to not return an error
@@ -38,10 +40,21 @@ func (d *Downloader) Download(ctx context.Context, id uuid.UUID) (io.ReadCloser,
 		}
 		debug.Printf(`%d, err := d.m.Download(ctx, &writerAt{pw}, o)`, nw)
 	}()
-	// wrap pr in something?
-	br := bufio.NewReader(pr)
-	br.Peek(512) // get the mime type this way?
-	return pr, nil
+	// using [io.Pipe] will not actually start reading until its used
+	// so we need to read some parts first so that the error from s3 manager
+	// can be determined before the caller needs it (this seems to trick the endpoint into returning a 200 OK)
+	// given we are reading some bytes, may as well attempt to grab the mime type too.
+	br := newReadCloser(pr)
+	p, err := br.Peek(512)
+	// a file smaller than 512 should still be valid from this point on
+	if err != nil && err != io.EOF {
+		ec := br.Close()
+		if ec != nil {
+			err = errors.Join(ec)
+		}
+		return nil, "", Error(err)
+	}
+	return br, http.DetectContentType(p), nil
 }
 
 func NewDownloader(bucket string, c manager.DownloadAPIClient) *Downloader {
@@ -51,4 +64,16 @@ func NewDownloader(bucket string, c manager.DownloadAPIClient) *Downloader {
 		u.Concurrency = 1 // force sequential writes
 	})
 	return &Downloader{bucket, d}
+}
+
+type readCloser struct {
+	*bufio.Reader
+	io.Closer
+}
+
+func newReadCloser(r io.ReadCloser) *readCloser {
+	return &readCloser{
+		Reader: bufio.NewReader(r),
+		Closer: r,
+	}
 }
