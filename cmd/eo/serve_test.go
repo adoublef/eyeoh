@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"flag"
+	"net/http"
 	"testing"
 	"time"
 
@@ -49,7 +50,7 @@ func Test_serve_run(t *testing.T) {
 		// 1. wait for service
 		eg.Go(func() error {
 			defer cancel()
-			err := wait.ForHTTP(ctx, 30*time.Second, "http://localhost:8080/ready")
+			err := wait.ForHTTP(ctx, 30*time.Second, "http://localhost:8080/ready", options)
 			if err != nil {
 				return err
 			}
@@ -57,4 +58,9 @@ func Test_serve_run(t *testing.T) {
 		})
 		is.OK(t, eg.Wait()) // service is ready
 	})
+}
+
+var options = func(r *http.Request) {
+	// need accept header
+	r.Header.Set("Accept", "*/*")
 }
