@@ -22,32 +22,77 @@ func Test_handleFileInfo(t *testing.T) {
 		// create the file
 		c, ctx := newClient(t), context.Background()
 
-		// make two request, one for a new file another for a new directory
-		// then using both the results to get the file info
-		// should get one file and folder
+		var fileIDs = make(chan string, 1)
+		var wg sync.WaitGroup
+		wg.Add(2)
+		go func() {
+			defer wg.Done()
 
-		res, err := c.PostFormFile(ctx, "POST /touch/files", "testdata/hello.txt")
-		is.OK(t, err) // return file upload response
-		is.Equal(t, res.StatusCode, http.StatusOK)
+			res, err := c.PostFormFile(ctx, "POST /touch/files", "testdata/hello.txt")
+			is.OK(t, err) // return file upload response
+			is.Equal(t, res.StatusCode, http.StatusOK)
 
-		var file struct {
-			ID string `json:"fileId"`
+			var file struct {
+				ID string `json:"fileId"`
+			}
+			err = json.NewDecoder(res.Body).Decode(&file)
+			is.OK(t, err) // decode json payload
+			is.OK(t, res.Body.Close())
+
+			fileIDs <- file.ID
+		}()
+		// create a folder
+		go func() {
+			defer wg.Done()
+
+			res, err := c.Do(ctx, "POST /mkdir/files", strings.NewReader(`{"name":"src"}`), ctJSON, acceptAll)
+			is.OK(t, err) // return file upload response
+			is.Equal(t, res.StatusCode, http.StatusOK)
+
+			var file struct {
+				ID string `json:"folderId"`
+			}
+			err = json.NewDecoder(res.Body).Decode(&file)
+			is.OK(t, err) // decode json payload
+			is.OK(t, res.Body.Close())
+
+			fileIDs <- file.ID
+		}()
+
+		go func() {
+			wg.Wait()
+			close(fileIDs)
+		}()
+
+		var isDir atomic.Int64
+		wg.Add(2)
+		for {
+			fileID, ok := <-fileIDs
+			if !ok {
+				break
+			}
+
+			go func() {
+				defer wg.Done()
+
+				res, err := c.Do(ctx, "GET /info/files/"+fileID, nil, ctJSON, acceptAll)
+				is.OK(t, err) // return download response
+				is.Equal(t, res.StatusCode, http.StatusOK)
+
+				var info struct {
+					IsDir bool `json:"isDir"`
+				}
+				err = json.NewDecoder(res.Body).Decode(&info)
+				is.OK(t, err) // decode json payload
+				is.OK(t, res.Body.Close())
+				// better way to do this?
+				if info.IsDir {
+					isDir.Add(1)
+				}
+			}()
 		}
-		err = json.NewDecoder(res.Body).Decode(&file)
-		is.OK(t, err) // decode json payload
-		is.OK(t, res.Body.Close())
-
-		// todo: make two requests to monitor singleflight/groupcache?
-		res, err = c.Do(ctx, "GET /info/files/"+file.ID, nil, ctJSON, acceptAll)
-		is.OK(t, err) // return download response
-		is.Equal(t, res.StatusCode, http.StatusOK)
-
-		var info struct {
-			IsDir string `json:"isDir"`
-		}
-		err = json.NewDecoder(res.Body).Decode(&info)
-		is.OK(t, err) // decode json payload
-		is.OK(t, res.Body.Close())
+		wg.Wait()
+		is.Equal(t, isDir.Load(), 1)
 	})
 }
 
