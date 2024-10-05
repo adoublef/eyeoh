@@ -5,7 +5,7 @@ create table up.fs (
   , root uuid
   , name text not null check (name <> '' and length(name) < 256)
   -- if directory then this value is set as null
-  -- object_id can only be set if sz is also set
+  -- ref_id can only be set if sz is also set
   , ref uuid
   , sz int default 0 check (sz >= 0)
   , mod_at timestamptz default now()

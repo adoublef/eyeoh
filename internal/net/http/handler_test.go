@@ -66,12 +66,7 @@ func Test_handleFileInfo(t *testing.T) {
 
 		var isDir atomic.Int64
 		wg.Add(2)
-		for {
-			fileID, ok := <-fileIDs
-			if !ok {
-				break
-			}
-
+		for fileID := range fileIDs {
 			go func() {
 				defer wg.Done()
 
