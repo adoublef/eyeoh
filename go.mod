@@ -1,4 +1,4 @@
-module go.adoublef/up
+module go.adoublef/eyeoh
 
 go 1.23.1
 
