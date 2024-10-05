@@ -31,7 +31,9 @@ type DirEntry struct {
 }
 
 type dirEntry struct {
-	id    uuid.UUID
+	//lint:ignore U1000 ignore this field for now
+	id uuid.UUID
+	//lint:ignore U1000 ignore this field for now
 	root  *uuid.UUID // can be null
 	name  Name       // using Name
 	ref   *uuid.UUID
