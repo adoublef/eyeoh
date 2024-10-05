@@ -89,7 +89,7 @@ from up.fs f where id = $1`
 		Name:    found.name,
 		Size:    value(found.sz),
 		ModTime: found.modAt,
-		IsDir:   false, // todo: fix
+		IsDir:   found.sz == nil, // todo: fix
 	}
 	return fi, found.v, nil
 }
