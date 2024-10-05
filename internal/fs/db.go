@@ -1,3 +1,4 @@
+// TODO: mv (rename and multiple files under a new directory location), cp (single file or many under a new directory location), rm (single file or many)
 package fs
 
 import (
@@ -15,6 +16,7 @@ type DB struct {
 	RWC *pgxpool.Pool
 }
 
+// Touch attempts to create a new [DirEntry] for a file. If root is set, the file is nested.
 func (d *DB) Touch(ctx context.Context, name Name, root uuid.UUID) (file uuid.UUID, err error) {
 	file, err = uuid.NewV7()
 	if err != nil {
@@ -37,6 +39,7 @@ func (d *DB) Touch(ctx context.Context, name Name, root uuid.UUID) (file uuid.UU
 	return file, nil
 }
 
+// Cat updates [FileInfo.Ref] and [FileInfo.Size]. The version of the file enables safe mutli-user modifications.
 func (d *DB) Cat(ctx context.Context, ref uuid.UUID, sz int64, file uuid.UUID, v uint64) error {
 	const query = `update up.fs
 set ref = $1, sz = $2, mod_at = now(), v = v + 1
@@ -59,6 +62,7 @@ where id = $3 and v = $4`
 	return mustRowsAffected(cmd)
 }
 
+// Stat return [FileInfo] if successful, else returns an error.
 func (d *DB) Stat(ctx context.Context, file uuid.UUID) (info FileInfo, v uint64, err error) {
 	const query = `select f.name
 , f.ref
@@ -94,6 +98,7 @@ from up.fs f where id = $1`
 	return fi, found.v, nil
 }
 
+// Mkdir attempts to create a new [DirEntry] for a directory. If root is not nil, the directory is nested.
 func (d *DB) Mkdir(ctx context.Context, name Name, root uuid.UUID) (file uuid.UUID, err error) {
 	file, err = uuid.NewV7()
 	if err != nil {
