@@ -22,7 +22,7 @@ func handleFileUpload(fsys *fs.FS) http.HandlerFunc {
 		ID string `json:"fileId"`
 	}
 	return func(w http.ResponseWriter, r *http.Request) {
-		ctx, span := tracer.Start(r.Context(), "handleFileUpload")
+		ctx, span := tracer.Start(r.Context(), "http.file_upload")
 		defer span.End()
 
 		// parse root directory if present in the query param
@@ -78,11 +78,11 @@ func handleFileUpload(fsys *fs.FS) http.HandlerFunc {
 	}
 }
 
-func handleDownloadFile(fsys *fs.FS) http.HandlerFunc {
+func handleFileDownload(fsys *fs.FS) http.HandlerFunc {
 	var badPathValue = statusHandler{http.StatusBadRequest, `file id in path has invalid format`}
 	var forbiddenFile = statusHandler{http.StatusForbidden, "file is a directory"}
 	return func(w http.ResponseWriter, r *http.Request) {
-		ctx, span := tracer.Start(r.Context(), "handleDownloadFile")
+		ctx, span := tracer.Start(r.Context(), "http.file_download")
 		defer span.End()
 
 		// query for attachment (default) or inline
@@ -149,7 +149,7 @@ func handleCreateFolder(fsys *fs.FS) http.HandlerFunc {
 		ID string `json:"folderId"`
 	}
 	return func(w http.ResponseWriter, r *http.Request) {
-		ctx, span := tracer.Start(r.Context(), "handleCreateFolder")
+		ctx, span := tracer.Start(r.Context(), "http.create_folder")
 		defer span.End()
 
 		root, name, err := parse(w, r)
@@ -182,7 +182,7 @@ func handleFileInfo(fsys *fs.FS) http.HandlerFunc {
 		Version     uint64 `json:"version"`
 	}
 	return func(w http.ResponseWriter, r *http.Request) {
-		ctx, span := tracer.Start(r.Context(), "handleFileInfo")
+		ctx, span := tracer.Start(r.Context(), "http.file_info")
 		defer span.End()
 
 		file, err := uuid.Parse(r.PathValue("file"))

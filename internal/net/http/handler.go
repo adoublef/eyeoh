@@ -56,7 +56,7 @@ func Handler(burst int, ttl time.Duration, fsys *fs.FS) http.Handler {
 	handleFunc("POST /touch/files", handleFileUpload(fsys))
 	handleFunc("POST /mkdir/files", JSON(handleCreateFolder(fsys)))
 	handleFunc("GET /info/files/{file}", handleFileInfo(fsys))
-	handleFunc("GET /files/{file}", handleDownloadFile(fsys))
+	handleFunc("GET /files/{file}", handleFileDownload(fsys))
 	// todo: MOVE
 	// todo: COPY
 	// todo: REMOVE
