@@ -18,7 +18,7 @@ import (
 )
 
 func Test_handleFileInfo(t *testing.T) {
-	t.Run("OK", func(t *testing.T) {
+	t.Run("IsDir", func(t *testing.T) {
 		// create the file
 		c, ctx := newClient(t), context.Background()
 
@@ -89,6 +89,14 @@ func Test_handleFileInfo(t *testing.T) {
 		wg.Wait()
 		is.Equal(t, isDir.Load(), 1)
 	})
+
+	t.Run("ErrNotFound", func(t *testing.T) {
+		c, ctx := newClient(t), context.Background()
+
+		res, err := c.Do(ctx, "GET /info/files/"+uuid.NewString(), nil, ctJSON, acceptAll)
+		is.OK(t, err) // return download response
+		is.Equal(t, res.StatusCode, http.StatusNotFound)
+	})
 }
 
 func Test_handleCreateFolder(t *testing.T) {
@@ -110,6 +118,27 @@ func Test_handleCreateFolder(t *testing.T) {
 		res, err := c.Do(ctx, "POST /mkdir/files", strings.NewReader(body), ctJSON, acceptAll)
 		is.OK(t, err) // return file upload response
 		is.Equal(t, res.StatusCode, http.StatusBadRequest)
+	})
+
+	// cannot download a folder? needs to use the archive endpoint
+
+	t.Run("ErrForbidden", func(t *testing.T) {
+		c, ctx := newClient(t), context.Background()
+
+		res, err := c.Do(ctx, "POST /mkdir/files", strings.NewReader(`{"name":"src"}`), ctJSON, acceptAll)
+		is.OK(t, err) // return file upload response
+		is.Equal(t, res.StatusCode, http.StatusOK)
+
+		var file struct {
+			ID string `json:"folderId"`
+		}
+		err = json.NewDecoder(res.Body).Decode(&file)
+		is.OK(t, err) // decode json payload
+		is.OK(t, res.Body.Close())
+
+		res, err = c.Do(ctx, "GET /files/"+file.ID, nil, acceptAll)
+		is.OK(t, err)                                     // return download response
+		is.Equal(t, res.StatusCode, http.StatusForbidden) // cannot use endpoint to download a directory
 	})
 }
 
@@ -173,6 +202,7 @@ func Test_handleFileDownload(t *testing.T) {
 		n, err := io.Copy(io.Discard, res.Body)
 		is.OK(t, err) // read content into discard
 		is.OK(t, res.Body.Close())
+		is.Equal(t, n, 14) // got;want
 		t.Logf(`%d, _ := io.Copy(io.Discard, res.Body)`, n)
 	})
 

@@ -4,6 +4,7 @@ import (
 	"errors"
 	"net/http"
 
+	"go.adoublef/eyeoh/internal/blob"
 	dberrors "go.adoublef/eyeoh/internal/database/errors"
 	"go.adoublef/eyeoh/internal/runtime/debug"
 )
@@ -18,7 +19,9 @@ func Error(w http.ResponseWriter, r *http.Request, err error) {
 	}
 	sh := statusHandler{code: http.StatusInternalServerError}
 	switch {
-	case errors.Is(err, dberrors.ErrNotExist):
+	// use-case? file created but failure occured so the header exists but the blob data does not.
+	// look into solving this in relation to [blob.ErrNotExist]
+	case errors.Is(err, dberrors.ErrNotExist) || errors.Is(err, blob.ErrNotExist):
 		// append path? or this will be handled by tempo anyway
 		sh.code = http.StatusNotFound
 	case errors.Is(err, dberrors.ErrExist):

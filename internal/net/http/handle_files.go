@@ -12,19 +12,10 @@ import (
 )
 
 func handleFileUpload(fsys *fs.FS) http.HandlerFunc {
-	var unsupportedMediaType = statusHandler{
-		code: http.StatusUnsupportedMediaType,
-		s:    `request is not a mulitpart/form`,
-	}
-	var badParentID = statusHandler{
-		code: http.StatusUnsupportedMediaType,
-		s:    `parent id has invalid format`,
-	}
+	var unsupportedMediaType = statusHandler{http.StatusUnsupportedMediaType, `request is not a mulitpart/form`}
+	var badParentID = statusHandler{http.StatusUnsupportedMediaType, `parent id has invalid format`}
 	var unprocessableEntity = func(format string, v ...any) statusHandler {
-		return statusHandler{
-			code: http.StatusUnprocessableEntity,
-			s:    fmt.Sprintf(format, v...),
-		}
+		return statusHandler{http.StatusUnprocessableEntity, fmt.Sprintf(format, v...)}
 	}
 
 	type upload struct {
@@ -65,6 +56,10 @@ func handleFileUpload(fsys *fs.FS) http.HandlerFunc {
 			Error(w, r, err)
 			return
 		}
+		// what if the s3 goes down shortly
+		// we must rollback the request that created the header
+		// but it too could go down, so need something like temporal
+		// to figure it out for us. add this next
 		ref, sz, err := fsys.Upload(ctx, part)
 		if err != nil {
 			Error(w, r, err)
@@ -84,10 +79,8 @@ func handleFileUpload(fsys *fs.FS) http.HandlerFunc {
 }
 
 func handleDownloadFile(fsys *fs.FS) http.HandlerFunc {
-	var badPathValue = statusHandler{
-		code: http.StatusBadRequest,
-		s:    `file id in path has invalid format`,
-	}
+	var badPathValue = statusHandler{http.StatusBadRequest, `file id in path has invalid format`}
+	var forbiddenFile = statusHandler{http.StatusForbidden, "file is a directory"}
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx, span := tracer.Start(r.Context(), "handleDownloadFile")
 		defer span.End()
@@ -106,15 +99,21 @@ func handleDownloadFile(fsys *fs.FS) http.HandlerFunc {
 			Error(w, r, err)
 			return
 		}
-		// if I send an id that does not exist
+		// any id seems to allow this to be pass, which is wrong.
+		// for folders I can just check with [*fs.FS.Stat] but
+		// I should check that an error can be returned at this level
 		// we need to cause a block
-		rc, err := fsys.Download(ctx, fi.Ref)
+		if fi.IsDir {
+			forbiddenFile.ServeHTTP(w, r)
+			return
+		}
+		rc, mime, err := fsys.Download(ctx, fi.Ref)
 		if err != nil {
 			Error(w, r, err)
 			return
 		}
 		defer rc.Close()
-		debug.Printf(`rc, %v := fsys.Download(ctx, %q)`, err, fi.ID)
+		debug.Printf(`rc, %q, %v := fsys.Download(ctx, %q)`, err, mime, fi.ID)
 		// return this to the user as attatchment or inline?
 		// serveContent Headers
 		// 1. last-modified
