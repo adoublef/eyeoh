@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strconv"
 
 	"github.com/google/uuid"
 	"go.adoublef/eyeoh/internal/fs"
@@ -93,7 +94,7 @@ func handleFileDownload(fsys *fs.FS) http.HandlerFunc {
 		}
 		debug.Printf(`rc, %q, %v := fsys.Download(ctx, %q)`, err, mime, file)
 		// if len(etag) > 0 { // directory won't have an etag
-		w.Header().Set("ETag", etag.String())
+		w.Header().Set("ETag", strconv.Quote(etag.String()))
 		// }
 		// return this to the user as attatchment or inline?
 		// serveContent Headers
