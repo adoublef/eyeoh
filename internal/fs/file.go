@@ -1,6 +1,7 @@
 package fs
 
 import (
+	"io"
 	"time"
 
 	"github.com/google/uuid"
@@ -15,6 +16,11 @@ var (
 	_      = otel.Meter(scopeName)
 	_      = olog.NewLogger(scopeName)
 )
+
+type File struct {
+	io.ReadCloser
+	Info FileInfo
+}
 
 type FileInfo struct {
 	ID      uuid.UUID `json:"fileId"`

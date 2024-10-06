@@ -70,6 +70,7 @@ func (d *DB) Stat(ctx context.Context, file uuid.UUID) (info FileInfo, v uint64,
 , f.mod_at
 , f.v
 from up.fs f where id = $1`
+
 	attr := trace.WithAttributes(
 		attribute.String("sql.query", query),
 		attribute.String("file.id", file.String()),
@@ -105,6 +106,7 @@ func (d *DB) Mkdir(ctx context.Context, name Name, root uuid.UUID) (file uuid.UU
 		return uuid.Nil, Error(err)
 	}
 	const query = `insert into up.fs (id, name, root, sz) values ($1, $2, $3, null)`
+
 	attr := trace.WithAttributes(
 		attribute.String("sql.query", query),
 		attribute.String("file.id", file.String()),
