@@ -54,6 +54,8 @@ func (d *Downloader) Download(ctx context.Context, id uuid.UUID) (rc io.ReadClos
 		}
 		return nil, "", Error(err)
 	}
+	debug.Printf(`p, _ := br.Peek(512)`)
+	debug.Printf(`%d := len(p)`, len(p))
 	return br, http.DetectContentType(p), nil
 }
 
