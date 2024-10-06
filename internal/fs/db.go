@@ -8,6 +8,7 @@ import (
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"go.adoublef/eyeoh/internal/database/errors"
+	"go.adoublef/eyeoh/internal/runtime/debug"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
 )
@@ -74,14 +75,17 @@ values ($3
 }
 
 // Stat return [FileInfo] if successful, else returns an error.
-func (d *DB) Stat(ctx context.Context, file uuid.UUID) (info FileInfo, v uint64, err error) {
-	// read from two tables
-	const query = `select f.name
-, f.ref
-, f.sz
-, f.mod_at
-, f.v
-from fs.dir_entry f where id = $1`
+func (d *DB) Stat(ctx context.Context, file uuid.UUID) (info FileInfo, v uint64, etag []byte, err error) {
+	const query = `select 
+	f.name
+	, b.id
+	, b.sz
+	, f.mod_at
+	, f.v
+	, b.sha
+from fs.dir_entry f left join fs.blob_data b
+on f.id = b.dir_entry where f.id = $1
+limit 1` // what if there are many blobs
 
 	attr := trace.WithAttributes(
 		attribute.String("sql.query", query),
@@ -90,25 +94,31 @@ from fs.dir_entry f where id = $1`
 	ctx, span := tracer.Start(ctx, "DB.Stat", attr)
 	defer span.End()
 
-	var found dirEntry
+	var de dirEntry
+	var bd blobData // make this a pointer instead?
 	if err = d.RWC.QueryRow(ctx, query, file).Scan(
-		&found.name,
-		&found.ref,
-		&found.sz,
-		&found.modAt,
-		&found.v,
+		&de.name,
+		&bd.id,
+		&bd.sz,
+		&de.modAt,
+		&de.v,
+		&bd.sha,
 	); err != nil {
-		return FileInfo{}, 0, Error(err)
+		return FileInfo{}, 0, nil, Error(err)
 	}
+	// using b instead?
+	debug.Printf(`%d = len(bd.sha)`, len(bd.sha))
+	debug.Printf(`%v = bd.sha`, (bd.sha))
 	fi := FileInfo{
 		ID:      file,
-		Ref:     value(found.ref),
-		Name:    found.name,
-		Size:    value(found.sz),
-		ModTime: found.modAt,
-		IsDir:   found.sz == nil, // todo: fix
+		Ref:     value(bd.id),
+		Name:    de.name,
+		Size:    value(bd.sz),
+		ModTime: de.modAt,
+		IsDir:   bd.sz == nil, // todo: maybe check if blobdata exists instead
 	}
-	return fi, found.v, nil
+	// URLEncoding version?
+	return fi, de.v, bd.sha, nil
 }
 
 // Mkdir attempts to create a new [DirEntry] for a directory. If root is not nil, the directory is nested.
@@ -117,7 +127,7 @@ func (d *DB) Mkdir(ctx context.Context, name Name, root uuid.UUID) (file uuid.UU
 	if err != nil {
 		return uuid.Nil, Error(err)
 	}
-	const query = `insert into fs.dir_entry (id, name, root, sz) values ($1, $2, $3, null)`
+	const query = `insert into fs.dir_entry (id, name, root) values ($1, $2, $3)`
 
 	attr := trace.WithAttributes(
 		attribute.String("sql.query", query),

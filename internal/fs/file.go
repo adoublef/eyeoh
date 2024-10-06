@@ -42,8 +42,15 @@ type dirEntry struct {
 	//lint:ignore U1000 ignore this field for now
 	root  *uuid.UUID // can be null
 	name  Name       // using Name
-	ref   *uuid.UUID
-	sz    *int64 // null for directories
 	modAt time.Time
 	v     uint64
+}
+
+type blobData struct {
+	id *uuid.UUID // should this be a reference?
+	// v     uint64
+	sz *int64 // null for directories
+	//lint:ignore U1000 ignore this field for now
+	modAt time.Time
+	sha   []byte // for files
 }

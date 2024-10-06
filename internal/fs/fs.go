@@ -8,6 +8,7 @@ import (
 	"io"
 
 	"github.com/google/uuid"
+	"go.adoublef/eyeoh/internal/runtime/debug"
 )
 
 var (
@@ -41,16 +42,17 @@ func (fsys *FS) Create(ctx context.Context, filename Name, r io.Reader, parent u
 	if err != nil {
 		return uuid.Nil, err
 	}
+	debug.Printf(`ref, %d, err := fsys.Upload(ctx, tr)`, sz)
 	if err := fsys.Cat(ctx, ref, sz, h.Sum(nil), file, 0); err != nil {
 		return uuid.Nil, err
 	}
 	return file, nil
 }
 
-func (fsys *FS) Open(ctx context.Context, file uuid.UUID) (f *File, mime string, err error) {
-	fi, _, err := fsys.Stat(ctx, file)
+func (fsys *FS) Open(ctx context.Context, file uuid.UUID) (f *File, mime string, checksum []byte, err error) {
+	fi, _, sha, err := fsys.Stat(ctx, file)
 	if err != nil {
-		return nil, "", err
+		return nil, "", nil, err
 	}
 	// does the stdlib allow opening a directory or can only read?
 	// any id seems to allow this to be pass, which is wrong.
@@ -60,13 +62,13 @@ func (fsys *FS) Open(ctx context.Context, file uuid.UUID) (f *File, mime string,
 	if fi.IsDir {
 		// return a file that has no body
 		// let the caller determine what they want to do with this.
-		return &File{ReadCloser: io.NopCloser(nil), Info: fi}, "inode/directory", nil
+		return &File{ReadCloser: io.NopCloser(nil), Info: fi}, "inode/directory", nil, nil
 	}
 	rc, mime, err := fsys.Download(ctx, fi.Ref)
 	if err != nil {
-		return nil, "", err
+		return nil, "", nil, err
 	}
-	return &File{ReadCloser: rc, Info: fi}, mime, nil
+	return &File{ReadCloser: rc, Info: fi}, mime, sha, nil
 }
 
 type Cursor struct {
