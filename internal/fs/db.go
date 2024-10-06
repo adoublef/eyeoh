@@ -83,9 +83,17 @@ func (d *DB) Stat(ctx context.Context, file uuid.UUID) (info FileInfo, v uint64,
 	, f.mod_at
 	, f.v
 	, b.sha
-from fs.dir_entry f left join fs.blob_data b
-on f.id = b.dir_entry where f.id = $1
-limit 1` // what if there are many blobs
+from fs.dir_entry f
+left join (
+    select dir_entry, id, sz, sha, v, mod_at  
+    from fs.blob_data 
+    where (dir_entry, v) in (
+        select dir_entry, max(v) 
+        from fs.blob_data 
+        group by dir_entry
+    )
+) b on f.id = b.dir_entry
+where f.id = $1` // what if there are many blobs
 
 	attr := trace.WithAttributes(
 		attribute.String("sql.query", query),
@@ -142,6 +150,26 @@ func (d *DB) Mkdir(ctx context.Context, name Name, root uuid.UUID) (file uuid.UU
 		return uuid.Nil, Error(err)
 	}
 	return file, nil
+}
+
+func (d *DB) Mv(ctx context.Context, name Name, file uuid.UUID, v uint64) error {
+	const query = `update fs.dir_entry
+set name = $1, mod_at = now(), v = v + 1
+where id = $2 and v = $3`
+	attr := trace.WithAttributes(
+		attribute.String("sql.query", query),
+		attribute.String("file.id", file.String()),
+		attribute.Int("file.v", int(v)),
+		attribute.String("file.name", name.String()),
+	)
+	ctx, span := tracer.Start(ctx, "DB.Mv", attr)
+	defer span.End()
+	// need to be set
+	cmd, err := d.RWC.Exec(ctx, query, name, file, v)
+	if err != nil {
+		return Error(err)
+	}
+	return mustRowsAffected(cmd)
 }
 
 func ptr[V comparable](v V) *V {
