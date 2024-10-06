@@ -22,7 +22,7 @@ func (d *DB) Touch(ctx context.Context, name Name, root uuid.UUID) (file uuid.UU
 	if err != nil {
 		return uuid.Nil, Error(err)
 	}
-	const query = `insert into up.fs (id, name, root) values ($1, $2, $3)`
+	const query = `insert into fs.dir_entry (id, name, root) values ($1, $2, $3)`
 
 	attr := trace.WithAttributes(
 		attribute.String("sql.query", query),
@@ -40,10 +40,21 @@ func (d *DB) Touch(ctx context.Context, name Name, root uuid.UUID) (file uuid.UU
 }
 
 // Cat updates [FileInfo.Ref] and [FileInfo.Size]. The version of the file enables safe mutli-user modifications.
-func (d *DB) Cat(ctx context.Context, ref uuid.UUID, sz int64, file uuid.UUID, v uint64) error {
-	const query = `update up.fs
-set ref = $1, sz = $2, mod_at = now(), v = v + 1
-where id = $3 and v = $4`
+func (d *DB) Cat(ctx context.Context, ref uuid.UUID, sz int64, sha []byte, file uuid.UUID, v uint64) error {
+	const query = `
+with dir_entry as (
+	update fs.dir_entry
+	set v = v + 1, mod_at = now()
+	where id = $1 and v = $2
+	returning id, mod_at, v)
+insert into fs.blob_data (id, dir_entry, sz, sha, mod_at, v)
+values ($3
+	, (select id from dir_entry)
+	, $4
+	, $5
+	, (select mod_at from dir_entry)
+	, (select v from dir_entry))
+`
 
 	attr := trace.WithAttributes(
 		attribute.String("sql.query", query),
@@ -55,7 +66,7 @@ where id = $3 and v = $4`
 	ctx, span := tracer.Start(ctx, "DB.Cat", attr)
 	defer span.End()
 
-	cmd, err := d.RWC.Exec(ctx, query, ref, sz, file, v)
+	cmd, err := d.RWC.Exec(ctx, query, file, v, ref, sz, sha)
 	if err != nil {
 		return Error(err)
 	}
@@ -64,12 +75,13 @@ where id = $3 and v = $4`
 
 // Stat return [FileInfo] if successful, else returns an error.
 func (d *DB) Stat(ctx context.Context, file uuid.UUID) (info FileInfo, v uint64, err error) {
+	// read from two tables
 	const query = `select f.name
 , f.ref
 , f.sz
 , f.mod_at
 , f.v
-from up.fs f where id = $1`
+from fs.dir_entry f where id = $1`
 
 	attr := trace.WithAttributes(
 		attribute.String("sql.query", query),
@@ -105,7 +117,7 @@ func (d *DB) Mkdir(ctx context.Context, name Name, root uuid.UUID) (file uuid.UU
 	if err != nil {
 		return uuid.Nil, Error(err)
 	}
-	const query = `insert into up.fs (id, name, root, sz) values ($1, $2, $3, null)`
+	const query = `insert into fs.dir_entry (id, name, root, sz) values ($1, $2, $3, null)`
 
 	attr := trace.WithAttributes(
 		attribute.String("sql.query", query),

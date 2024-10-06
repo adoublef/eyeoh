@@ -1,1 +1,1 @@
-drop schema up cascade;
+drop schema fs cascade;

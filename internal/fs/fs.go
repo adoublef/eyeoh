@@ -2,6 +2,7 @@ package fs
 
 import (
 	"context"
+	"crypto/sha256"
 	"encoding/base64"
 	"errors"
 	"io"
@@ -34,11 +35,13 @@ func (fsys *FS) Create(ctx context.Context, filename Name, r io.Reader, parent u
 	// we must rollback the request that created the header
 	// but it too could go down, so need something like temporal
 	// to figure it out for us. add this next
-	ref, sz, err := fsys.Upload(ctx, r)
+	h := sha256.New()
+	tr := io.TeeReader(r, h)
+	ref, sz, err := fsys.Upload(ctx, tr)
 	if err != nil {
 		return uuid.Nil, err
 	}
-	if err := fsys.Cat(ctx, ref, sz, file, 0); err != nil {
+	if err := fsys.Cat(ctx, ref, sz, h.Sum(nil), file, 0); err != nil {
 		return uuid.Nil, err
 	}
 	return file, nil
