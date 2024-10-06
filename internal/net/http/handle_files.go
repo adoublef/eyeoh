@@ -51,21 +51,8 @@ func handleFileUpload(fsys *fs.FS) http.HandlerFunc {
 			Error(w, r, err)
 			return
 		}
-		file, err := fsys.Touch(ctx, filename, parent)
+		file, err := fsys.Create(ctx, filename, part, parent)
 		if err != nil {
-			Error(w, r, err)
-			return
-		}
-		// what if the s3 goes down shortly
-		// we must rollback the request that created the header
-		// but it too could go down, so need something like temporal
-		// to figure it out for us. add this next
-		ref, sz, err := fsys.Upload(ctx, part)
-		if err != nil {
-			Error(w, r, err)
-			return
-		}
-		if err := fsys.Cat(ctx, ref, sz, file, 0); err != nil {
 			Error(w, r, err)
 			return
 		}
@@ -94,26 +81,17 @@ func handleFileDownload(fsys *fs.FS) http.HandlerFunc {
 			return
 		}
 
-		fi, _, err := fsys.Stat(ctx, file)
+		f, mime, err := fsys.Open(ctx, file)
 		if err != nil {
 			Error(w, r, err)
 			return
 		}
-		// any id seems to allow this to be pass, which is wrong.
-		// for folders I can just check with [*fs.FS.Stat] but
-		// I should check that an error can be returned at this level
-		// we need to cause a block
-		if fi.IsDir {
+		defer f.Close() // be sure this wont panic for directories
+		if f.Info.IsDir {
 			forbiddenFile.ServeHTTP(w, r)
 			return
 		}
-		rc, mime, err := fsys.Download(ctx, fi.Ref)
-		if err != nil {
-			Error(w, r, err)
-			return
-		}
-		defer rc.Close()
-		debug.Printf(`rc, %q, %v := fsys.Download(ctx, %q)`, err, mime, fi.ID)
+		debug.Printf(`rc, %q, %v := fsys.Download(ctx, %q)`, err, mime, file)
 		// return this to the user as attatchment or inline?
 		// serveContent Headers
 		// 1. last-modified
@@ -130,7 +108,7 @@ func handleFileDownload(fsys *fs.FS) http.HandlerFunc {
 		// normal encoding: Content-Disposition: attachment; filename="filename.jpg"
 		// special encoding (RFC 5987): Content-Disposition: attachment; filename*="filename.jpg"
 		if r.Method != http.MethodHead {
-			io.CopyN(w, rc, fi.Size)
+			io.CopyN(w, f, f.Info.Size)
 		}
 	}
 }

@@ -151,9 +151,9 @@ func newTestFS(tb testing.TB) *fs.FS {
 		config.WithRegion(region), config.WithCredentialsProvider(cred))
 	is.OK(tb, err) // return minio configuration
 
-	// Create S3 service client
+	// Create S3 service c
 	// add toxiproxy (MINIO_ + tb.Name)
-	client := s3.NewFromConfig(conf, func(o *s3.Options) {
+	c := s3.NewFromConfig(conf, func(o *s3.Options) {
 		o.BaseEndpoint = aws.String("http://" + minioURL)
 		o.UsePathStyle = true
 	})
@@ -164,7 +164,7 @@ func newTestFS(tb testing.TB) *fs.FS {
 	p := &s3.CreateBucketInput{
 		Bucket: &bucket,
 	}
-	_, err = client.CreateBucket(ctx, p)
+	_, err = c.CreateBucket(ctx, p)
 	is.OK(tb, err) // create bucket
 
 	crdbDSN, err := compose.crdb.ConnectionString(ctx)
@@ -187,8 +187,9 @@ func newTestFS(tb testing.TB) *fs.FS {
 	tb.Cleanup(func() { pool.Close() })
 
 	return &fs.FS{
-		DB:       &fs.DB{RWC: pool},
-		Uploader: blob.New(bucket, client),
+		DB:         &fs.DB{RWC: pool},
+		Uploader:   blob.NewUploader(bucket, c),
+		Downloader: blob.NewDownloader(bucket, c),
 	}
 }
 
