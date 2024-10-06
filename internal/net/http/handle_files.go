@@ -2,6 +2,7 @@ package http
 
 import (
 	"cmp"
+	"encoding/hex"
 	"fmt"
 	"io"
 	"net/http"
@@ -81,7 +82,7 @@ func handleFileDownload(fsys *fs.FS) http.HandlerFunc {
 			return
 		}
 
-		f, mime, err := fsys.Open(ctx, file)
+		f, mime, etag, err := fsys.Open(ctx, file)
 		if err != nil {
 			Error(w, r, err)
 			return
@@ -92,6 +93,9 @@ func handleFileDownload(fsys *fs.FS) http.HandlerFunc {
 			return
 		}
 		debug.Printf(`rc, %q, %v := fsys.Download(ctx, %q)`, err, mime, file)
+		// if len(etag) > 0 { // directory won't have an etag
+		w.Header().Set("ETag", hex.EncodeToString(etag))
+		// }
 		// return this to the user as attatchment or inline?
 		// serveContent Headers
 		// 1. last-modified
@@ -158,6 +162,7 @@ func handleFileInfo(fsys *fs.FS) http.HandlerFunc {
 	type stat struct {
 		fs.FileInfo        // inline
 		Version     uint64 `json:"version"`
+		ETag        string `json:"etag,omitempty"`
 	}
 	return func(w http.ResponseWriter, r *http.Request) {
 		ctx, span := tracer.Start(r.Context(), "http.file_info")
@@ -168,7 +173,7 @@ func handleFileInfo(fsys *fs.FS) http.HandlerFunc {
 			badPathValue.ServeHTTP(w, r)
 			return
 		}
-		info, v, err := fsys.Stat(ctx, file)
+		info, v, etag, err := fsys.Stat(ctx, file)
 		if err != nil {
 			Error(w, r, err)
 			return
@@ -177,6 +182,7 @@ func handleFileInfo(fsys *fs.FS) http.HandlerFunc {
 		st := stat{
 			FileInfo: info,
 			Version:  v,
+			ETag:     hex.EncodeToString(etag),
 		}
 		respond(w, r, st)
 	}
