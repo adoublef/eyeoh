@@ -187,3 +187,39 @@ func handleFileInfo(fsys *fs.FS) http.HandlerFunc {
 		respond(w, r, st)
 	}
 }
+
+func handleFileRename(fsys *fs.FS) http.HandlerFunc {
+	type rename struct {
+		Name    fs.Name `json:"name"`
+		Version uint64  `json:"revision"`
+	}
+	parse := func(w http.ResponseWriter, r *http.Request) (uuid.UUID, uint64, fs.Name, error) {
+		// get path name
+		file, err := uuid.Parse(r.PathValue("file"))
+		if err != nil {
+			return uuid.Nil, 0, "", err
+		} // proper status error
+		c, err := Decode[rename](w, r, 0, 0)
+		return file, c.Version, c.Name, err
+	}
+
+	return func(w http.ResponseWriter, r *http.Request) {
+		ctx, span := tracer.Start(r.Context(), "http.file_rename")
+		defer span.End()
+
+		file, v, name, err := parse(w, r)
+		if err != nil {
+			Error(w, r, err) // todo: fix errors
+			return
+		}
+
+		err = fsys.Mv(ctx, name, file, v)
+		if err != nil {
+			Error(w, r, err) // todo: fix errors
+			return
+		}
+
+		// todo: json payload may be good?
+		w.WriteHeader(http.StatusNoContent)
+	}
+}

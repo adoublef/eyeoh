@@ -17,6 +17,40 @@ import (
 	"go.adoublef/eyeoh/internal/testing/is"
 )
 
+func Test_handleFileRename(t *testing.T) {
+	t.Run("OK", func(t *testing.T) {
+		// create the file
+		c, ctx := newClient(t), context.Background()
+
+		res, err := c.PostFormFile(ctx, "POST /touch/files", "testdata/hello.txt")
+		is.OK(t, err) // return file upload response
+		is.Equal(t, res.StatusCode, http.StatusOK)
+
+		var file struct {
+			ID string `json:"fileId"`
+		}
+		err = json.NewDecoder(res.Body).Decode(&file)
+		is.OK(t, err) // decode json payload
+		is.OK(t, res.Body.Close())
+
+		body := `{"name":"world.txt","revision":1}` // how do i know
+		res, err = c.Do(ctx, "PATCH /rename/files/"+file.ID, strings.NewReader(body), ctJSON, acceptAll)
+		is.OK(t, err) // return file rename response
+		is.Equal(t, res.StatusCode, http.StatusNoContent)
+
+		// when downloading we should still get 14
+		res, err = c.Do(ctx, "GET /files/"+file.ID, nil, acceptAll)
+		is.OK(t, err) // return download response
+		is.Equal(t, res.StatusCode, http.StatusOK)
+
+		n, err := io.Copy(io.Discard, res.Body)
+		is.OK(t, err) // read content into discard
+		is.OK(t, res.Body.Close())
+		is.Equal(t, n, 14) // got;want
+		t.Logf(`%d, _ := io.Copy(io.Discard, res.Body)`, n)
+	})
+}
+
 func Test_handleFileInfo(t *testing.T) {
 	t.Run("IsDir", func(t *testing.T) {
 		// create the file
