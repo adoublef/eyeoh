@@ -15,3 +15,5 @@ create table up.fs (
   , foreign key (root) references up.fs (id)
   , primary key (id)
 );
+
+-- up.blobs (id of reference, id of file, version, checksum)
