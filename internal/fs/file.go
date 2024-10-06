@@ -1,6 +1,7 @@
 package fs
 
 import (
+	"encoding/hex"
 	"io"
 	"time"
 
@@ -34,6 +35,12 @@ type FileInfo struct {
 type DirEntry struct {
 	Path string
 	FileInfo
+}
+
+type Etag []byte
+
+func (e Etag) String() string {
+	return hex.EncodeToString(e)
 }
 
 type dirEntry struct {

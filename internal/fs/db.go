@@ -75,7 +75,7 @@ values ($3
 }
 
 // Stat return [FileInfo] if successful, else returns an error.
-func (d *DB) Stat(ctx context.Context, file uuid.UUID) (info FileInfo, v uint64, etag []byte, err error) {
+func (d *DB) Stat(ctx context.Context, file uuid.UUID) (info FileInfo, v uint64, etag Etag, err error) {
 	const query = `select 
 	f.name
 	, b.id

@@ -2,7 +2,6 @@ package http
 
 import (
 	"cmp"
-	"encoding/hex"
 	"fmt"
 	"io"
 	"net/http"
@@ -94,7 +93,7 @@ func handleFileDownload(fsys *fs.FS) http.HandlerFunc {
 		}
 		debug.Printf(`rc, %q, %v := fsys.Download(ctx, %q)`, err, mime, file)
 		// if len(etag) > 0 { // directory won't have an etag
-		w.Header().Set("ETag", hex.EncodeToString(etag))
+		w.Header().Set("ETag", etag.String())
 		// }
 		// return this to the user as attatchment or inline?
 		// serveContent Headers
@@ -182,7 +181,7 @@ func handleFileInfo(fsys *fs.FS) http.HandlerFunc {
 		st := stat{
 			FileInfo: info,
 			Version:  v,
-			ETag:     hex.EncodeToString(etag),
+			ETag:     etag.String(),
 		}
 		respond(w, r, st)
 	}

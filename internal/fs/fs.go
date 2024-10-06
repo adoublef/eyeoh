@@ -49,7 +49,7 @@ func (fsys *FS) Create(ctx context.Context, filename Name, r io.Reader, parent u
 	return file, nil
 }
 
-func (fsys *FS) Open(ctx context.Context, file uuid.UUID) (f *File, mime string, checksum []byte, err error) {
+func (fsys *FS) Open(ctx context.Context, file uuid.UUID) (f *File, mime string, etag Etag, err error) {
 	fi, _, sha, err := fsys.Stat(ctx, file)
 	if err != nil {
 		return nil, "", nil, err
