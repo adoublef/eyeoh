@@ -4,6 +4,10 @@
 
 1. [Resources](#resources)
    1. [CI/CD](#cicd)
+   1. [Data Structures & Algorithms](#data-structures--algorithms)
+   1. [Hashing](#hashing)
+   1. [Consistent Hashing](#consistent-hashing)
+   1. [Cryptography](#cryptography)
 
 ## Resources
 
@@ -37,3 +41,7 @@
 - [understanding consistent hashing and implementation in golang](https://medium.com/@sumit-s/understanding-consistent-hashing-and-implementation-in-golang-a55777355e63)
 - [consistent hashing a guide](https://medium.com/@sent0hil/consistent-hashing-a-guide-go-implementation-fe3421ac3e8f)
 - [go-zero consistenthash](https://github.com/zeromicro/go-zero/blob/master/core/hash/consistenthash.go)
+
+### Cryptography
+
+- [encrypting streams in go](https://medium.com/@mat285/encrypting-streams-in-go-6cff6062a107)
