@@ -36,9 +36,9 @@ jobs:
         run: go install golang.org/x/lint/golint@latest
       - name: Run golint
         run: golint ./...
-      - name: Setup Testcontainers Cloud Client
-        uses: atomicjar/testcontainers-cloud-setup-action@v1
-        with:
-          token: ${{ secrets.TC_CLOUD_TOKEN }}
+      # - name: Setup Testcontainers Cloud Client
+      #   uses: atomicjar/testcontainers-cloud-setup-action@v1
+      #   with:
+      #     token: ${{ secrets.TC_CLOUD_TOKEN }}
       - name: Run tests
         run: go test -race -vet=off ./...
