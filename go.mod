@@ -37,7 +37,10 @@ require (
 
 require (
 	github.com/AdaLogics/go-fuzz-headers v0.0.0-20230811130428-ced1acdcaa24 // indirect
+	github.com/creack/pty v1.1.23 // indirect
+	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
 	github.com/moby/sys/userns v0.1.0 // indirect
+	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 )
 
 require (
@@ -117,5 +120,4 @@ require (
 	google.golang.org/grpc v1.67.1 // indirect
 	google.golang.org/protobuf v1.34.2 // indirect
 	gopkg.in/tomb.v1 v1.0.0-20141024135613-dd632973f1e7 // indirect
-	tailscale.com v1.74.1
 )
