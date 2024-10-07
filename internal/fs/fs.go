@@ -38,6 +38,7 @@ func (fsys *FS) Create(ctx context.Context, filename Name, r io.Reader, parent u
 	// to figure it out for us. add this next
 	h := sha256.New()
 	tr := io.TeeReader(r, h)
+	// seek to find out the content type may not work with encryption?
 	ref, sz, err := fsys.Upload(ctx, tr)
 	if err != nil {
 		return uuid.Nil, err

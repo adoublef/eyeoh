@@ -76,24 +76,35 @@ values ($3
 
 // Stat return [FileInfo] if successful, else returns an error.
 func (d *DB) Stat(ctx context.Context, file uuid.UUID) (info FileInfo, v uint64, etag Etag, err error) {
-	const query = `select 
+	//	const query = `select
+	//	f.name
+	//	, b.id
+	//	, b.sz
+	//	, f.mod_at
+	//	, f.v
+	//	, b.sha
+	//
+	// from fs.dir_entry f
+	// left join (
+	//
+	//	select dir_entry, id, sz, sha, v, mod_at
+	//		from fs.blob_data
+	//	order by v desc
+	//
+	// ) b on f.id = b.dir_entry
+	// where f.id = $1` // what if there are many blobs, will this still work
+	const query = `select distinct on (b.dir_entry)
 	f.name
 	, b.id
 	, b.sz
 	, f.mod_at
 	, f.v
 	, b.sha
-from fs.dir_entry f
-left join (
-    select dir_entry, id, sz, sha, v, mod_at  
-    from fs.blob_data 
-    where (dir_entry, v) in (
-        select dir_entry, max(v) 
-        from fs.blob_data 
-        group by dir_entry
-    )
-) b on f.id = b.dir_entry
-where f.id = $1` // what if there are many blobs
+from fs.dir_entry f 
+left join fs.blob_data b on f.id = b.dir_entry
+where f.id = $1
+order by b.dir_entry, b.v desc
+`
 
 	attr := trace.WithAttributes(
 		attribute.String("sql.query", query),
