@@ -36,6 +36,12 @@ func (fsys *FS) Create(ctx context.Context, filename Name, r io.Reader, parent u
 	// we must rollback the request that created the header
 	// but it too could go down, so need something like temporal
 	// to figure it out for us. add this next
+	//
+	// this calculation should likely be handled by downloader given size is also handled by it.
+	//
+	// introduce an uploads table that is used to query inflight attempts to upload a file.
+	// this means two db call look ups potentially 1) fs.dir_entry, 2) up.inflight
+	// nil error in both cases for this request to be allowed to proceed.
 	h := sha256.New()
 	tr := io.TeeReader(r, h)
 	// seek to find out the content type may not work with encryption?

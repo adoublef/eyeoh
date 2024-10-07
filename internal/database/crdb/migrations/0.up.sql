@@ -25,3 +25,18 @@ create table fs.blob_data (
   , foreign key (dir_entry) references fs.dir_entry (id)
   , primary key (id)
 );
+
+create schema up;
+
+create table up.inflight (
+  -- each request shall have a unique ideentiifer
+  -- this could also be the blob_data id?
+  id uuid
+  -- these are needed for the fs.dir_entry tables
+  , root uuid
+  , name text
+  , sz int
+  -- this is appendable
+  , sha bytes
+  , primary key (id)
+);

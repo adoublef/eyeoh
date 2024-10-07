@@ -8,7 +8,6 @@ import (
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"go.adoublef/eyeoh/internal/database/errors"
-	"go.adoublef/eyeoh/internal/runtime/debug"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
 )
@@ -76,23 +75,6 @@ values ($3
 
 // Stat return [FileInfo] if successful, else returns an error.
 func (d *DB) Stat(ctx context.Context, file uuid.UUID) (info FileInfo, v uint64, etag Etag, err error) {
-	//	const query = `select
-	//	f.name
-	//	, b.id
-	//	, b.sz
-	//	, f.mod_at
-	//	, f.v
-	//	, b.sha
-	//
-	// from fs.dir_entry f
-	// left join (
-	//
-	//	select dir_entry, id, sz, sha, v, mod_at
-	//		from fs.blob_data
-	//	order by v desc
-	//
-	// ) b on f.id = b.dir_entry
-	// where f.id = $1` // what if there are many blobs, will this still work
 	const query = `select distinct on (b.dir_entry)
 	f.name
 	, b.id
@@ -125,9 +107,6 @@ order by b.dir_entry, b.v desc
 	); err != nil {
 		return FileInfo{}, 0, nil, Error(err)
 	}
-	// using b instead?
-	debug.Printf(`%d = len(bd.sha)`, len(bd.sha))
-	debug.Printf(`%v = bd.sha`, (bd.sha))
 	fi := FileInfo{
 		ID:      file,
 		Ref:     value(bd.id),
