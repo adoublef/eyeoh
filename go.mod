@@ -15,9 +15,9 @@ require (
 	github.com/matryer/is v1.4.1
 	github.com/prometheus/client_golang v1.20.4
 	github.com/rs/zerolog v1.33.0
-	github.com/testcontainers/testcontainers-go v0.33.0
+	github.com/testcontainers/testcontainers-go v0.34.0
 	github.com/testcontainers/testcontainers-go/modules/cockroachdb v0.33.0
-	github.com/testcontainers/testcontainers-go/modules/minio v0.33.0
+	github.com/testcontainers/testcontainers-go/modules/minio v0.34.0
 	go.opentelemetry.io/contrib/bridges/otelslog v0.5.0
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.55.0
 	go.opentelemetry.io/contrib/instrumentation/runtime v0.55.0
@@ -41,6 +41,8 @@ require (
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
 	github.com/moby/sys/userns v0.1.0 // indirect
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
+	github.com/stretchr/testify v1.9.0 // indirect
+	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
 require (
